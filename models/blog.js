@@ -25,14 +25,11 @@ Blog.init(
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
-    date: {
-      type: DataTypes.DATE,
-    },
   },
   {
     sequelize,
     underscored: true,
-    timestamps: false,
+    timestamps: true,
     modelName: "blog",
   },
 );
