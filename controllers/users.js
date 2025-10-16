@@ -1,0 +1,56 @@
+const router = require("express").Router();
+
+const { User } = require("../models");
+
+router.get("/", async (_req, res) => {
+  const users = await User.findAll();
+  res.json(users);
+});
+
+router.post("/", async (req, res, next) => {
+  try {
+    console.log(req.body);
+    const user = await User.create(req.body);
+    return res.json(user);
+  } catch (error) {
+    next(error);
+  }
+});
+
+const userFinder = async (req, _res, next) => {
+  req.user = await User.findOne({ where: { username: req.params.username } });
+  next();
+};
+
+router.get("/:username", userFinder, async (req, res, next) => {
+  try {
+    if (req.user) {
+      res.json(req.user);
+    } else {
+      res.status(404).end();
+    }
+  } catch {
+    next(error);
+  }
+});
+
+router.put("/:username", userFinder, async (req, res, next) => {
+  try {
+    if (req.user) {
+      const { username } = req.body;
+      if (username === undefined) {
+        res.status(400).json({ error: "Missing username field" }).end();
+      } else {
+        req.user.username = username;
+        const updatedUserName = await req.user.save();
+        res.json(updatedUserName);
+      }
+    } else {
+      res.status(404).end();
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+module.exports = router;
