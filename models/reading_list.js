@@ -32,6 +32,7 @@ ReadingList.init(
     underscored: true,
     timestamps: false,
     modelName: "reading_list",
+    tableName: "reading_list", // this is needed because otherwise sequelize tries to pluralise the name when querying
   },
 );
 

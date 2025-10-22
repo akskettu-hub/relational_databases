@@ -26,10 +26,27 @@ const userFinder = async (req, _res, next) => {
   next();
 };
 
-router.get("/:username", userFinder, async (req, res, next) => {
+router.get("/:id", async (req, res, next) => {
+  const user = await User.findByPk(req.params.id, {
+    attributes: { exclude: [""] },
+    include: [
+      {
+        model: Blog,
+        attributes: { exclude: ["userId"] },
+      },
+      {
+        model: Blog,
+        as: "user_reading_list",
+        attributes: { exclude: ["userId"] },
+        through: {
+          attributes: []
+        }
+      },
+    ],
+  });
   try {
-    if (req.user) {
-      res.json(req.user);
+    if (user) {
+      res.json(user);
     } else {
       res.status(404).end();
     }
