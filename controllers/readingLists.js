@@ -13,9 +13,10 @@ router.post("/", async (req, res, next) => {
   }
 });
 
+// TODO: Clean up error handling for this route
 router.put("/:id", tokenExtractor, async (req, res, next) => {
-  const readingListEntry = await ReadingList.findByPk(req.decodedToken.id);
-
+  const readingListEntry = await ReadingList.findByPk(req.params.id);
+  console.log(req.decodedToken.id, readingListEntry.userId, readingListEntry)
   try {
     if (readingListEntry && readingListEntry.userId === req.decodedToken.id) {
       const { read } = req.body;
