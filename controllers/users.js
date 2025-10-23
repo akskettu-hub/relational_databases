@@ -27,6 +27,18 @@ const userFinder = async (req, _res, next) => {
 };
 
 router.get("/:id", async (req, res, next) => {
+  const through = {
+    attributes: ["read_mark", "id"],
+  };
+
+  const { read } = req.query;
+
+  if (read === "true") {
+    through.where = { read_mark: true };
+  } else if (read === "false") {
+    through.where = { read_mark: false };
+  }
+
   const user = await User.findByPk(req.params.id, {
     attributes: { exclude: [""] },
     include: [
@@ -38,9 +50,7 @@ router.get("/:id", async (req, res, next) => {
         model: Blog,
         as: "user_reading_list",
         attributes: { exclude: ["userId"] },
-        through: {
-          attributes: ["read_mark", "id"]
-        }
+        through,
       },
     ],
   });
