@@ -2,7 +2,7 @@ const router = require("express").Router();
 
 const { Blog, User } = require("../models");
 const { Op } = require("sequelize");
-const { tokenExtractor } = require("../util/middleware");
+const { tokenExtractor, userTokenValidator } = require("../util/middleware");
 
 router.get("/", async (req, res) => {
   const where = req.query.search
@@ -39,13 +39,11 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-router.post("/", tokenExtractor, async (req, res, next) => {
+router.post("/", tokenExtractor, userTokenValidator, async (req, res, next) => {
   try {
-    console.log(req.body);
-    const user = await User.findByPk(req.decodedToken.id);
     const blog = await Blog.create({
       ...req.body,
-      userId: user.id,
+      userId: req.decodedToken.id,
     });
     return res.json(blog);
   } catch (error) {
@@ -77,15 +75,15 @@ router.put("/:id", blogFinder, async (req, res, next) => {
   }
 });
 
-router.delete("/:id", tokenExtractor, async (req, res) => {
-  const blog = await Blog.findByPk(req.params.id);
-  if (blog) {
-    if (blog.userId !== req.decodedToken.id) {
+router.delete("/:id", tokenExtractor, blogFinder, userTokenValidator, async (req, res) => {
+  //const blog = await Blog.findByPk(req.params.id);
+  if (req.blog) {
+    if (req.blog.userId !== req.decodedToken.id) {
       return res
         .status(401)
         .json({ error: "blogs can only be deleted by their creator" });
     }
-    await blog.destroy();
+    await req.blog.destroy();
     res.status(204).end();
   } else {
     res.status(404).end();
