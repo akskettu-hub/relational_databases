@@ -2,7 +2,7 @@ const router = require("express").Router();
 
 const { Blog, User } = require("../models");
 const { Op } = require("sequelize");
-const { tokenExtractor, userTokenValidator } = require("../util/middleware");
+const { tokenExtractor, userSessionValidator } = require("../util/middleware");
 
 router.get("/", async (req, res) => {
   const where = req.query.search
@@ -39,17 +39,22 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-router.post("/", tokenExtractor, userTokenValidator, async (req, res, next) => {
-  try {
-    const blog = await Blog.create({
-      ...req.body,
-      userId: req.decodedToken.id,
-    });
-    return res.json(blog);
-  } catch (error) {
-    next(error);
-  }
-});
+router.post(
+  "/",
+  tokenExtractor,
+  userSessionValidator,
+  async (req, res, next) => {
+    try {
+      const blog = await Blog.create({
+        ...req.body,
+        userId: req.decodedToken.id,
+      });
+      return res.json(blog);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 const blogFinder = async (req, _res, next) => {
   req.blog = await Blog.findByPk(req.params.id);
@@ -75,19 +80,28 @@ router.put("/:id", blogFinder, async (req, res, next) => {
   }
 });
 
-router.delete("/:id", tokenExtractor, blogFinder, userTokenValidator, async (req, res) => {
-  //const blog = await Blog.findByPk(req.params.id);
-  if (req.blog) {
-    if (req.blog.userId !== req.decodedToken.id) {
-      return res
-        .status(401)
-        .json({ error: "blogs can only be deleted by their creator" });
+router.delete(
+  "/:id",
+  tokenExtractor,
+  blogFinder,
+  userSessionValidator,
+  async (req, res, next) => {
+    try {
+      if (req.blog) {
+        if (req.blog.userId !== req.decodedToken.id) {
+          return res
+            .status(401)
+            .json({ error: "blogs can only be deleted by their creator" });
+        }
+        await req.blog.destroy();
+        res.status(204).end();
+      } else {
+        res.status(404).json({ error: "No such blog found" }).end();
+      }
+    } catch (error) {
+      next(error);
     }
-    await req.blog.destroy();
-    res.status(204).end();
-  } else {
-    res.status(404).end();
-  }
-});
+  },
+);
 
 module.exports = router;
